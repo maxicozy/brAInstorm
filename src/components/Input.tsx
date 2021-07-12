@@ -1,36 +1,56 @@
-import { FC } from 'react';
+import { FC, FormEvent, useCallback } from 'react';
 import styled from 'styled-components';
 import Button from './Button';
 import Loading from './Loading';
 
 const Input: FC<{
-  onClick: () => void,
-  isLoading: boolean,
-  setProblem: (problem: string) => void
+  onSubmit?: () => void,
+  isLoading?: boolean,
+  setProblem: (input: string) => void
   problem: string
-}> = props => {
-  return <Style>
-          <div className="bg-gray-100 rounded p-8" style={{ maxWidth: 1000 }}>
-            <input
-              value={props.problem}
-              onChange={(e) => props.setProblem(e.target.value)}
-              className="w-full border shadow font- p-4 rounded-lg my-2"
-              placeholder="How might we" 
-              maxLength={200}
-            />
-            {props.isLoading ? (
-              <Loading />
-            ) : (
-              <Button onClick={() => props.onClick()}/>
-            )}
-          </div>
-  </Style>;
-} 
+}> = ({ onSubmit, isLoading, setProblem }) => {
 
-const Style = styled.div`
-  div {      
-     background: #FFFFFF;
-     text-align: center;
+  const submit = useCallback((e: FormEvent) => {
+    e.preventDefault();
+    onSubmit?.()
+  }, [onSubmit])
+
+  return <Style onSubmit={submit}>
+    <textarea
+      onChange={(e) => setProblem(e.target.value)}
+      className="w-full"
+      placeholder="How might we... ?"
+      maxLength={300}
+    />
+    {isLoading ? (
+      <Loading />
+    ) : (
+      <Button />
+    )}
+  </Style>;
+}
+
+const Style = styled.form`
+
+  text-align: center;
+  width: 500px;
+  height: 200px;
+  
+  textarea {
+    color: #434343;
+    height: 120px;
+    padding: 15px 20px 20px;
+    font-family: -apple-system, BlinkMacSystemFont, mono;
+    font-style: normal;
+    font-size: 14px;
+    line-height: auto;
+    background: #FFFFFF;
+    box-shadow: 0px 8px 30px 4px #E5E5E5;
+    border-radius: 20px;
+    border: none;
+    overflow: auto;
+    outline: none;
+    resize: none;
   }
 `;
 

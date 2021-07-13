@@ -7,12 +7,10 @@ import { v4 as uuid } from "uuid";
 import CustomNode from './components/CustomNode';
 import Input from './components/Input';
 import { Point, useCenteredTree } from "./helpers";
-import spinnerSrc from "./spinner.svg";
-//import {encode, decode} from "gpt-3-encoder";
 
 const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
-const URL = "https://api.openai.com/v1/engines/davinci/completions";
-const filterURL = "https://api.openai.com/v1/engines/content-filter-alpha-c4/completions";
+const URL = "https://brainstormbe.ds.ava.hfg.design/solveProblem";
+const filterURL = "https://brainstormbe.ds.ava.hfg.design/filterData";
 const headers = {
   "Content-Type": "application/json",
   Authorization: `Bearer ${API_KEY}`,
@@ -88,6 +86,8 @@ async function solveProblem(question: string, depth: number): Promise<Node[]> {
 async function filterData(data: string) {
   const filterData = filterPrompt(data);
   try {
+    console.log(JSON.stringify(filterData));
+    
     const res = await axios.post(filterURL, filterData);
     let output_label = res.data.choices[0].text;
 
@@ -135,7 +135,6 @@ function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [problem, setProblem] = useState("");
   const [trees, setTrees] = useState<Node[]>();
-  const [showSpinner, setShowSpinner] = useState(false);
   const [centeredTranslate, containerRef] = useCenteredTree();
   const [translate, setTranslate] = useState<Point>()
   const [zoom, setZoom] = useState(1)
@@ -170,7 +169,6 @@ function App() {
 
   async function onNodeClick(i: number, node: TreeNodeDatum) {
     if (!trees) return;
-    setShowSpinner(true);
 
     const newTree = await generateChildrenForId({ ...trees[i] }, (node as any).id);
 
@@ -178,7 +176,6 @@ function App() {
       if (i === i2) return newTree
       return tree
     }));
-    setShowSpinner(false);
   }
 
   const reset = useCallback(() => {
@@ -203,12 +200,6 @@ function App() {
 
   return (
     <Container ref={containerRef as any} >
-      {showSpinner && (
-        <div className="absolute bg-black shadow w-48 flex items-center justify-center rounded px-4 py-2 flex text-white opacity-75 mt-4">
-          <img src={spinnerSrc} className="w-5 h-5 mr-2" alt="" />{" "}
-          generating...
-        </div>
-      )}
 
       {trees?.map((tree, i) =>
         <TreeContainer key={i}>

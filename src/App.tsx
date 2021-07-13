@@ -8,7 +8,7 @@ import CustomNode from './components/CustomNode';
 import Input from './components/Input';
 import { Point, useCenteredTree } from "./helpers";
 import spinnerSrc from "./spinner.svg";
-
+//import {encode, decode} from "gpt-3-encoder";
 
 const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
 const URL = "https://api.openai.com/v1/engines/davinci/completions";
@@ -42,6 +42,46 @@ const filterPrompt = (data: string) => {
     frequency_penalty: 0,
     presence_penalty: 0,
     logprobs: 10
+  }
+}
+
+interface Node extends RawNodeDatum {
+  question?: string
+  id?: string,
+  children?: Node[]
+  isStart?: boolean
+}
+
+async function solveProblem(question: string, depth: number): Promise<Node[]> {
+  if (depth === 0) return [];
+  // returns an object for a question
+  const data = solvePrompt(question.trim());
+  try {
+    const res = await axios.post(URL, data, { headers });
+    const out: string = res.data.choices[0].text;
+
+    const output_label = await filterData(out);
+
+    if (output_label === '2') return [];
+
+    const lines = out.split("\n").filter((line) => line.trim() !== "");
+    //const statements = lines.map((line) => line.split(".")[2].trim());
+
+    const nodes = await Promise.all(lines.map(async s => {
+      // const question = await toQuestion(s);
+      return {
+        name: s,
+        question: s,
+        id: uuid(),
+        children: await solveProblem(question, depth - 1),
+      }
+    }))
+
+    console.log(nodes)
+    return nodes;
+  } catch (error) {
+    console.error(error);
+    return []
   }
 }
 
@@ -89,46 +129,6 @@ async function filterData(data: string) {
     console.error(error);
     return []
   }  
-}
-
-interface Node extends RawNodeDatum {
-  question?: string
-  id?: string,
-  children?: Node[]
-  isStart?: boolean
-}
-
-async function solveProblem(question: string, depth: number): Promise<Node[]> {
-  if (depth === 0) return [];
-  // returns an object for a question
-  const data = solvePrompt(question.trim());
-  try {
-    const res = await axios.post(URL, data, { headers });
-    const out: string = res.data.choices[0].text;
-
-    const output_label = await filterData(out);
-
-    if (output_label === '2') return [];
-
-    const lines = out.split("\n").filter((line) => line.trim() !== "");
-    //const statements = lines.map((line) => line.split(".")[2].trim());
-
-    const nodes = await Promise.all(lines.map(async s => {
-      // const question = await toQuestion(s);
-      return {
-        name: s,
-        question: s,
-        id: uuid(),
-        children: await solveProblem(question, depth - 1),
-      }
-    }))
-
-    console.log(nodes)
-    return nodes;
-  } catch (error) {
-    console.error(error);
-    return []
-  }
 }
 
 function App() {

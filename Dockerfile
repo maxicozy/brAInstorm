@@ -1,5 +1,7 @@
 FROM node:lts-alpine
 
+RUN npm install npm@latest
+
 # install simple http server for serving static content
 RUN npm i -g http-server
 

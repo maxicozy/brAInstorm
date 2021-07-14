@@ -16,7 +16,7 @@ RUN npm i
 COPY . .
 
 # build app for production with minification
-RUN npm tun build
+RUN npm run build
 
 # Network / reverse proxy config
 LABEL traefik.http.routers.brainstorm.rule="Host(`brainstorm.ds.ava.hfg.design`)"

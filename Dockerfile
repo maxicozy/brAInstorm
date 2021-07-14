@@ -1,7 +1,7 @@
 FROM node:lts-alpine
 
 # install simple http server for serving static content
-RUN yarn add -g http-server
+RUN npm i -g http-server
 
 # make the 'app' folder the current working directory
 WORKDIR /app
@@ -10,13 +10,13 @@ WORKDIR /app
 COPY package*.json ./
 
 # install project dependencies
-RUN yarn add
+RUN npm i
 
 # copy project files and folders to the current working directory (i.e. 'app' folder)
 COPY . .
 
 # build app for production with minification
-RUN yarn build
+RUN npm tun build
 
 # Network / reverse proxy config
 LABEL traefik.http.routers.brainstorm.rule="Host(`brainstorm.ds.ava.hfg.design`)"

@@ -8,12 +8,12 @@ import CustomNode from './components/CustomNode';
 import Input from './components/Input';
 import { Point, useCenteredTree } from "./helpers";
 
-const API_KEY = process.env.REACT_APP_OPENAI_API_KEY;
+const AUTH_KEY = 'D(G+KbPdSgVkYp3s6v9y$B&E)H@McQfThWmZq4t7w!z%C*F-JaNdRgUkXn2r5u8x !A%D*G-KaPdRgUkXp2s5v8y/B?E(H+MbQeThVmYq3t6w9z$C&F)J@NcRfUjXnZr4 t7w!z%C*F-JaNdRfUjXn2r5u8x/A?D(G+KbPeShVkYp3s6v9y$B&E)H@McQfTjWn Yq3t6w9z$C&F)J@NcQfTjWnZr4u7x!A%D*G-KaPdSgVkXp2s5v8y/B?E(H+MbQeT gVkYp3s6v9y$B&E)H@McQeThWmZq4t7w!z%C*F-JaNdRgUjXn2r5u8x/A?D(G+Kb NdRgUkXp2s5v8y/B?E(H+MbQeShVmYq3t6w9z$C&F)J@NcRfUjWnZr4u7x!A%D*G -JaNcRfUjXn2r5u8x/A?D(G+KbPeSgVkYp3s6v9y$B&E)H@McQfTjWmZq4t7w!z% C&F)J@NcQfTjWnZr4u7x!A%D*G-KaPdSgUkXp2s5v8y/B?E(H+MbQeThWmYq3t6w 9y$B&E)H@MbQeThWmZq4t7w!z%C*F-JaNdRfUjXn2r5u8x/A?D(G+KbPeShVkYp3 s5v8y/B?E(H+MbPeShVmYq3t6w9z$C&F)J@NcRfTjWnZr4u7x!A%D*G-KaPdSgVk';
 const URL = "https://brainstormbe.ds.ava.hfg.design/solveProblem";
 const filterURL = "https://brainstormbe.ds.ava.hfg.design/filterData";
 const headers = {
   "Content-Type": "application/json",
-  Authorization: `Bearer ${API_KEY}`,
+  Authorization: AUTH_KEY,
 };
 
 // This is the probability at which we evaluate that a "2" is likely real vs. should be discarded as a false positive
@@ -88,7 +88,7 @@ async function filterData(data: string) {
   try {
     console.log(JSON.stringify(filterData));
     
-    const res = await axios.post(filterURL, filterData);
+    const res = await axios.post(filterURL, filterData, { headers });
     let output_label = res.data.choices[0].text;
 
     if (output_label === "2") {

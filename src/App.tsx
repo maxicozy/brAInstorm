@@ -1,10 +1,11 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { Fragment, useCallback, useState } from "react";
 import Tree from "react-d3-tree";
 import { RawNodeDatum, TreeNodeDatum } from "react-d3-tree/lib/types/common";
 import styled from 'styled-components';
 import { v4 as uuid } from "uuid";
 import CustomNode from './components/CustomNode';
+import Dropdown from './components/Dropdown';
 import Input from './components/Input';
 import { Point, useCenteredTree } from "./helpers";
 
@@ -23,7 +24,7 @@ const solvePrompt = (question: string) => {
   return {
     prompt: `This is a brainstorm, which follows the 7 Rules of Brainstorming, including „Encourage wild Ideas“. The best way to solve a hard problem is to come up with as many viable solutions as possible. If the brainstorm is asked about any topics relating to politics, religion, sex, sexual context, race, age, disability, wars, conflicts, homosexuality, LGBT, convicts, slurs, hate crimes, or any NSFW content it will not respond. Here are a few examples of hard problems and possible steps that could be taken to solve them.\n\nProblem: How do I find love?\n1. Build confidence in yourself. You cannot find love if you do not first love yourself.\n2. Be active in the real world. Find hobbies, get involved in organizations, go to the gym, build friends, etc. Before you find a partner you must have friends.\n3. Practice communication skills. Learn how to talk about yourself and listen to others. This will help you build better relationships.\n4. Get outside your comfort zone. If you are not comfortable talking to strangers, start small. Talk to a cashier, or sit with a stranger at lunch.\n\nProblem: How can I get rich without getting lucky?\n1. Seek wealth, not money or status. Wealth is having assets that earn while you sleep. Money is how we transfer time and wealth. Status is your place in the social hierarchy.\n2. You will get rich by giving society what it wants but does not yet know how to get. At scale.\n3. Pick business partners with high intelligence, energy, and, above all, integrity.\n\nProblem: How can we motivate people to track their health in an app?\n1. Users get free screening services, such as a complete blood count\n2. Users who track their medication in our app are warned of known drug interactions.\n3. Personalized health reports based on the user’s data are offered\n4. Patients can choose to share their medical records with doctors, friends or family members.\n\nProblem: Who is Donald Trump?\n Sorry, i cant answer that.\n\nProblem: Let's talk about sex\n Sorry, i cant answer that.\n\nProblem: ${question}\n1.`,   
     temperature: 0.7,
-    max_tokens: 500,
+    max_tokens: 300,
     top_p: 1,
     frequency_penalty: 0.5,
     presence_penalty: 0,
@@ -43,12 +44,17 @@ const filterPrompt = (data: string) => {
   }
 }
 
-interface Node extends RawNodeDatum {
+export interface Node extends RawNodeDatum {
   question?: string
   id?: string,
   children?: Node[]
   isStart?: boolean
 }
+
+function isAxiosError(e: any):e is AxiosError{ 
+  return e.isAxiosError;
+}
+
 
 async function solveProblem(question: string, depth: number): Promise<Node[]> {
   if (depth === 0) return [];
@@ -75,10 +81,13 @@ async function solveProblem(question: string, depth: number): Promise<Node[]> {
       }
     }))
 
-    console.log(nodes)
+    //nodes.forEach((node, i) => console.log("{name: \""+nodes[i].name+"\"}, "));
     return nodes;
   } catch (error) {
-    console.error(error);
+    if (isAxiosError(error) && error.response?.status === 429) throw new Error(error.response?.data)
+    else {
+      console.error(error);
+    }
     return []
   }
 }
@@ -86,7 +95,6 @@ async function solveProblem(question: string, depth: number): Promise<Node[]> {
 async function filterData(data: string) {
   const filterData = filterPrompt(data);
   try {
-    console.log(JSON.stringify(filterData));
     
     const res = await axios.post(filterURL, filterData, { headers });
     let output_label = res.data.choices[0].text;
@@ -109,6 +117,7 @@ async function filterData(data: string) {
                   output_label = "1";
               }
           }
+          
           // If only one of them is found, set output label to that one
           else if (logprob_0) {
               output_label = "0";
@@ -139,6 +148,7 @@ function App() {
   const [translate, setTranslate] = useState<Point>()
   const [zoom, setZoom] = useState(1)
   const [inputShown, showInput] = useState(true)
+  const [error, setError] = useState<string>();
 
   const update = useCallback((e: { translate: Point, zoom: number }) => {
     setTranslate(e.translate)
@@ -150,8 +160,18 @@ function App() {
     if (problem.trim() === "") return;
     setTrees(undefined);
     setIsLoading(true);
-    const nodes = await solveProblem(problem, 1);
+    try {
+      const nodes = await solveProblem(problem, 1);
+      setNodes(nodes, problem);
+      setError(undefined);
+    } catch (error) {
+      setIsLoading(false);
+      setError(error.message);
+    }
 
+  }
+
+  function setNodes(nodes: Node[], problem: string) {
     const size = Math.max(1, Math.ceil(nodes.length / 4))
     const arrays = new Array(4).fill(null).map((_, i) =>
       nodes.slice(i * size, (i + 1) * size)
@@ -165,7 +185,7 @@ function App() {
 
     showInput(false)
     setIsLoading(false);
-  }
+  } 
 
   async function onNodeClick(i: number, node: TreeNodeDatum) {
     if (!trees) return;
@@ -199,7 +219,9 @@ function App() {
   }
 
   return (
+    <>
     <Container ref={containerRef as any} >
+    <Dropdown setNodes={setNodes}></Dropdown>
 
       {trees?.map((tree, i) =>
         <TreeContainer key={i}>
@@ -223,14 +245,14 @@ function App() {
             }}
           />
         </TreeContainer>
-      )
-      }
+      )}
 
       {inputShown && <Fixed>
-        <Input onSubmit={onSubmit} isLoading={isLoading} problem={problem} setProblem={(input) => setProblem(input)} />
+        <Input onSubmit={onSubmit} isLoading={isLoading} disabled={!!error} problem={error ?? problem} setProblem={(input) => setProblem(input)} />
       </Fixed>}
 
     </Container>
+    </>
   );
 }
 

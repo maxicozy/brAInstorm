@@ -1,5 +1,5 @@
 import { FC, FormEvent, useCallback } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import Button from './Button';
 import Loading from './Loading';
 
@@ -8,15 +8,18 @@ const Input: FC<{
   isLoading?: boolean,
   setProblem: (input: string) => void
   problem: string
-}> = ({ onSubmit, isLoading, setProblem }) => {
+  disabled?: boolean,
+}> = ({ onSubmit, isLoading, setProblem, problem, disabled }) => {
 
   const submit = useCallback((e: FormEvent) => {
     e.preventDefault();
     onSubmit?.()
   }, [onSubmit])
 
-  return <Style onSubmit={submit}>
+  return <Style disabled={disabled} onSubmit={submit}>
     <textarea
+      disabled={disabled}
+      value={problem}
       onChange={(e) => setProblem(e.target.value)}
       className="w-full"
       placeholder="How might we... ?"
@@ -30,7 +33,7 @@ const Input: FC<{
   </Style>;
 }
 
-const Style = styled.form`
+const Style = styled.form<{ disabled?: boolean }>`
 
   text-align: center;
   width: 500px;
@@ -51,6 +54,12 @@ const Style = styled.form`
     overflow: auto;
     outline: none;
     resize: none;
+    ${p => p.disabled && css`
+      font-weight: bold;
+      color: #FFD600;
+      text-align: center;
+      padding-top: 50px;
+   `}
   }
 `;
 
